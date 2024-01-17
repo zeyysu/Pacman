@@ -4,7 +4,7 @@ from random import randrange
 import random
 import copy
 import os
-
+import time
 BoardPath = "Assets/BoardImages/"
 ElementPath = "Assets/ElementImages/"
 TextPath = "Assets/TextImages/"
@@ -55,6 +55,7 @@ originalGameBoard = [
     [3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3],
 ]
 gameBoard = copy.deepcopy(originalGameBoard)
+ghostColors = ["red", "blue", "pink", "orange"]
 spriteRatio = 3/2
 square = 25 # Size of each unit square
 spriteOffset = square * (1 - spriteRatio) * (1/2)
@@ -81,6 +82,9 @@ class Game:
         self.pacmanUpdateCount = 0
         self.tictakChangeDelay = 10
         self.tictakChangeCount = 0
+        #spawn ghost every minute
+        self.ghostSpawnDelay = 60
+        self.ghostLastSpawn = time.time()
         self.ghostsAttacked = False
         self.highScore = self.getHighScore()
         self.score = score
@@ -181,6 +185,10 @@ class Game:
             self.flipColor()
             self.tictakChangeCount = 0
 
+        if time.time() - self.ghostLastSpawn > self.ghostSpawnDelay:
+            self.ghostLastSpawn = time.time()
+            self.spawn_ghost()
+
         if self.pacmanUpdateCount == self.pacmanUpdateDelay:
             self.pacmanUpdateCount = 0
             self.pacman.update()
@@ -221,6 +229,24 @@ class Game:
             running = False
         self.softRender()
 
+
+    # Spawns a ghost
+    def spawn_ghost(self):
+        color = ghostColors[len(self.ghosts)%4]
+        spawnLocation = [0, 0]
+        newGhost = Ghost(spawnLocation[0], spawnLocation[1], color, len(self.ghosts))
+        while True:
+            spawnLocation[0] = randrange(0, len(gameBoard) - 1)
+            spawnLocation[1] = randrange(0, len(gameBoard[0]) -1)
+            if (abs(spawnLocation[0]- self.pacman.row) + abs(spawnLocation[1] - self.pacman.col) > 10) and newGhost.isValid(spawnLocation[0], spawnLocation[1]):
+                break
+        newGhost.row = spawnLocation[0]
+        newGhost.col = spawnLocation[1]
+        self.ghosts.append(newGhost)
+        self.ghostStates.append([0, 0])
+        self.levels.append([350, 250])
+        print(f"Spawned {newGhost.color}-colored ghost at {spawnLocation[0]}, {spawnLocation[1]}")
+            
     # Render method
     def render(self):
         screen.fill((0, 0, 0)) # Flushes the screen
@@ -474,7 +500,7 @@ class Game:
 
     def newLevel(self):
         reset()
-        self.lives += 1
+        self.lives = 3
         self.collected = 0
         self.started = False
         self.berryState = [200, 400, False]
@@ -731,8 +757,6 @@ class Ghost:
         if cCol < 0 or cCol > len(gameBoard[0]) - 1:
             return True
         for ghost in game.ghosts:
-            if ghost.color == self.color:
-                continue
             if ghost.row == cRow and ghost.col == cCol and not self.dead:
                 return False
         if not ghostGate.count([cRow, cCol]) == 0:
@@ -869,8 +893,20 @@ def canMove(row, col):
 # Reset after death
 def reset():
     global game
-    game.ghosts = [Ghost(14.0, 13.5, "red", 0), Ghost(17.0, 11.5, "blue", 1), Ghost(17.0, 13.5, "pink", 2), Ghost(17.0, 15.5, "orange", 3)]
+    #game.ghosts = [Ghost(14.0, 13.5, "red", 0), Ghost(17.0, 11.5, "blue", 1), Ghost(17.0, 13.5, "pink", 2), Ghost(17.0, 15.5, "orange", 3)]
     for ghost in game.ghosts:
+        if ghost.color == "red":
+            ghost.row = 14.0
+            ghost.col = 13.5
+        elif ghost.color == "blue":
+            ghost.row = 17.0
+            ghost.col = 11.5
+        elif ghost.color == "pink":
+            ghost.row = 17.0
+            ghost.col = 13.5
+        elif ghost.color == "orange":
+            ghost.row = 17.0
+            ghost.col = 15.5
         ghost.setTarget()
     game.pacman = Pacman(26.0, 13.5)
     game.lives -= 1
