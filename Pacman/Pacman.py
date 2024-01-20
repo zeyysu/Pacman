@@ -5,7 +5,10 @@ import random
 import copy
 import os
 import time
-BoardPath = "Assets/BoardImages/"
+
+import maze
+
+BoardPath = "Assets/boardTextures/"
 ElementPath = "Assets/ElementImages/"
 TextPath = "Assets/TextImages/"
 DataPath = "Assets/Data/"
@@ -15,45 +18,98 @@ pygame.mixer.init()
 pygame.init()
 print(pygame.mixer.music.get_busy())
 
+# print(maze.board)
+
+
+originalGameBoard = maze.board
+boardTextureNames = maze.tex
+
+margin = 3
+
+boardWidth = maze.boardWidth
+boardHeight = maze.boardHeight + margin * 2
+
+boardCenter = (boardHeight // 2, boardWidth // 2) # in y, x format
+pacmanStart = (boardCenter[0] + 6, boardCenter[1]) # in y, x format
+
+# add margins for the board
+for i in range(margin):
+    originalGameBoard.insert(0, [3] * boardWidth)
+    originalGameBoard.append([3] * boardWidth)
+    boardTextureNames.insert(0, ['empty'] * boardWidth)
+    boardTextureNames.append(['empty'] * boardWidth)
+
+# make sure pacman is free
+for i in range(10):
+    if originalGameBoard[pacmanStart[0]][pacmanStart[1]] == 3:
+        pacmanStart = (pacmanStart[0] + 1, pacmanStart[1])
+
+pacmanStart = (pacmanStart[0], pacmanStart[1])
+
+emptySpaces = []
+
+for i in range(len(originalGameBoard)):
+    for j in range(len(originalGameBoard[i])):
+        val = originalGameBoard[i][j]
+        if val == 2:
+            emptySpaces.append((i, j))
+
+def addRandomSpecialTicTaks():
+    global originalGameBoard
+
+    # pick 10 random empty spaces to be special tic-taks
+    special = random.choices(emptySpaces, k=10)
+
+    for i,j in special:
+        originalGameBoard[i][j] = 6
+
+addRandomSpecialTicTaks()
 # 28 Across 31 Tall 1: Empty Space 2: Tic-Tak 3: Wall 4: Ghost safe-space 5: Special Tic-Tak
-originalGameBoard = [
-    [3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3],
-    [3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3],
-    [3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3],
-    [3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3],
-    [3,2,2,2,2,2,2,2,2,2,2,2,2,3,3,2,2,2,2,2,2,2,2,2,2,2,2,3],
-    [3,2,3,3,3,3,2,3,3,3,3,3,2,3,3,2,3,3,3,3,3,2,3,3,3,3,2,3],
-    [3,6,3,3,3,3,2,3,3,3,3,3,2,3,3,2,3,3,3,3,3,2,3,3,3,3,6,3],
-    [3,2,3,3,3,3,2,3,3,3,3,3,2,3,3,2,3,3,3,3,3,2,3,3,3,3,2,3],
-    [3,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,3],
-    [3,2,3,3,3,3,2,3,3,2,3,3,3,3,3,3,3,3,2,3,3,2,3,3,3,3,2,3],
-    [3,2,3,3,3,3,2,3,3,2,3,3,3,3,3,3,3,3,2,3,3,2,3,3,3,3,2,3],
-    [3,2,2,2,2,2,2,3,3,2,2,2,2,3,3,2,2,2,2,3,3,2,2,2,2,2,2,3],
-    [3,3,3,3,3,3,2,3,3,3,3,3,1,3,3,1,3,3,3,3,3,2,3,3,3,3,3,3],
-    [3,3,3,3,3,3,2,3,3,3,3,3,1,3,3,1,3,3,3,3,3,2,3,3,3,3,3,3],
-    [3,3,3,3,3,3,2,3,3,1,1,1,1,1,1,1,1,1,1,3,3,2,3,3,3,3,3,3],
-    [3,3,3,3,3,3,2,3,3,1,3,3,3,3,3,3,3,3,1,3,3,2,3,3,3,3,3,3],
-    [3,3,3,3,3,3,2,3,3,1,3,4,4,4,4,4,4,3,1,3,3,2,3,3,3,3,3,3],
-    [1,1,1,1,1,1,2,1,1,1,3,4,4,4,4,4,4,3,1,1,1,2,1,1,1,1,1,1], # Middle Lane Row: 14
-    [3,3,3,3,3,3,2,3,3,1,3,4,4,4,4,4,4,3,1,3,3,2,3,3,3,3,3,3],
-    [3,3,3,3,3,3,2,3,3,1,3,3,3,3,3,3,3,3,1,3,3,2,3,3,3,3,3,3],
-    [3,3,3,3,3,3,2,3,3,1,1,1,1,1,1,1,1,1,1,3,3,2,3,3,3,3,3,3],
-    [3,3,3,3,3,3,2,3,3,1,3,3,3,3,3,3,3,3,1,3,3,2,3,3,3,3,3,3],
-    [3,3,3,3,3,3,2,3,3,1,3,3,3,3,3,3,3,3,1,3,3,2,3,3,3,3,3,3],
-    [3,2,2,2,2,2,2,2,2,2,2,2,2,3,3,2,2,2,2,2,2,2,2,2,2,2,2,3],
-    [3,2,3,3,3,3,2,3,3,3,3,3,2,3,3,2,3,3,3,3,3,2,3,3,3,3,2,3],
-    [3,2,3,3,3,3,2,3,3,3,3,3,2,3,3,2,3,3,3,3,3,2,3,3,3,3,2,3],
-    [3,6,2,2,3,3,2,2,2,2,2,2,2,1,1,2,2,2,2,2,2,2,3,3,2,2,6,3],
-    [3,3,3,2,3,3,2,3,3,2,3,3,3,3,3,3,3,3,2,3,3,2,3,3,2,3,3,3],
-    [3,3,3,2,3,3,2,3,3,2,3,3,3,3,3,3,3,3,2,3,3,2,3,3,2,3,3,3],
-    [3,2,2,2,2,2,2,3,3,2,2,2,2,3,3,2,2,2,2,3,3,2,2,2,2,2,2,3],
-    [3,2,3,3,3,3,3,3,3,3,3,3,2,3,3,2,3,3,3,3,3,3,3,3,3,3,2,3],
-    [3,2,3,3,3,3,3,3,3,3,3,3,2,3,3,2,3,3,3,3,3,3,3,3,3,3,2,3],
-    [3,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,3],
-    [3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3],
-    [3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3],
-    [3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3],
-]
+# originalGameBoard = [
+#     [3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3],
+#     [3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3],
+#     [3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3],
+#     [3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3],
+#     [3,2,2,2,2,2,2,2,2,2,2,2,2,3,3,2,2,2,2,2,2,2,2,2,2,2,2,3],
+#     [3,2,3,3,3,3,2,3,3,3,3,3,2,3,3,2,3,3,3,3,3,2,3,3,3,3,2,3],
+#     [3,6,3,3,3,3,2,3,3,3,3,3,2,3,3,2,3,3,3,3,3,2,3,3,3,3,6,3],
+#     [3,2,3,3,3,3,2,3,3,3,3,3,2,3,3,2,3,3,3,3,3,2,3,3,3,3,2,3],
+#     [3,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,3],
+#     [3,2,3,3,3,3,2,3,3,2,3,3,3,3,3,3,3,3,2,3,3,2,3,3,3,3,2,3],
+#     [3,2,3,3,3,3,2,3,3,2,3,3,3,3,3,3,3,3,2,3,3,2,3,3,3,3,2,3],
+#     [3,2,2,2,2,2,2,3,3,2,2,2,2,3,3,2,2,2,2,3,3,2,2,2,2,2,2,3],
+#     [3,3,3,3,3,3,2,3,3,3,3,3,1,3,3,1,3,3,3,3,3,2,3,3,3,3,3,3],
+#     [3,3,3,3,3,3,2,3,3,3,3,3,1,3,3,1,3,3,3,3,3,2,3,3,3,3,3,3],
+#     [3,3,3,3,3,3,2,3,3,1,1,1,1,1,1,1,1,1,1,3,3,2,3,3,3,3,3,3],
+#     [3,3,3,3,3,3,2,3,3,1,3,3,3,3,3,3,3,3,1,3,3,2,3,3,3,3,3,3],
+#     [3,3,3,3,3,3,2,3,3,1,3,4,4,4,4,4,4,3,1,3,3,2,3,3,3,3,3,3],
+#     [1,1,1,1,1,1,2,1,1,1,3,4,4,4,4,4,4,3,1,1,1,2,1,1,1,1,1,1], # Middle Lane Row: 14
+#     [3,3,3,3,3,3,2,3,3,1,3,4,4,4,4,4,4,3,1,3,3,2,3,3,3,3,3,3],
+#     [3,3,3,3,3,3,2,3,3,1,3,3,3,3,3,3,3,3,1,3,3,2,3,3,3,3,3,3],
+#     [3,3,3,3,3,3,2,3,3,1,1,1,1,1,1,1,1,1,1,3,3,2,3,3,3,3,3,3],
+#     [3,3,3,3,3,3,2,3,3,1,3,3,3,3,3,3,3,3,1,3,3,2,3,3,3,3,3,3],
+#     [3,3,3,3,3,3,2,3,3,1,3,3,3,3,3,3,3,3,1,3,3,2,3,3,3,3,3,3],
+#     [3,2,2,2,2,2,2,2,2,2,2,2,2,3,3,2,2,2,2,2,2,2,2,2,2,2,2,3],
+#     [3,2,3,3,3,3,2,3,3,3,3,3,2,3,3,2,3,3,3,3,3,2,3,3,3,3,2,3],
+#     [3,2,3,3,3,3,2,3,3,3,3,3,2,3,3,2,3,3,3,3,3,2,3,3,3,3,2,3],
+#     [3,6,2,2,3,3,2,2,2,2,2,2,2,1,1,2,2,2,2,2,2,2,3,3,2,2,6,3],
+#     [3,3,3,2,3,3,2,3,3,2,3,3,3,3,3,3,3,3,2,3,3,2,3,3,2,3,3,3],
+#     [3,3,3,2,3,3,2,3,3,2,3,3,3,3,3,3,3,3,2,3,3,2,3,3,2,3,3,3],
+#     [3,2,2,2,2,2,2,3,3,2,2,2,2,3,3,2,2,2,2,3,3,2,2,2,2,2,2,3],
+#     [3,2,3,3,3,3,3,3,3,3,3,3,2,3,3,2,3,3,3,3,3,3,3,3,3,3,2,3],
+#     [3,2,3,3,3,3,3,3,3,3,3,3,2,3,3,2,3,3,3,3,3,3,3,3,3,3,2,3],
+#     [3,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,3],
+#     [3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3],
+#     [3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3],
+#     [3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3],
+# ]
+# for i in range(len(originalGameBoard)):
+#     originalGameBoard[i].append(3)
+#     originalGameBoard[i].append(3)
+
+# originalGameBoard[17][-1] = 1
+# originalGameBoard[17][-2] = 1
+
 gameBoard = copy.deepcopy(originalGameBoard)
 ghostColors = ["red", "blue", "pink", "orange"]
 spriteRatio = 3/2
@@ -65,6 +121,18 @@ pygame.display.flip()
 musicPlaying = 0 # 0: Chomp, 1: Important, 2: Siren
 # pelletColor = (165, 93, 53)
 pelletColor = (222, 161, 133)
+
+def getTexture(imageName):
+    try:
+        fileName = BoardPath + imageName + '.png'
+        # print(fileName)
+        tileImage = pygame.image.load(fileName)
+    except:
+        print("Error: Could not find file", fileName)
+        tileImage = pygame.image.load(BoardPath + 'empty' + '.png')
+    tileImage = pygame.transform.scale(tileImage, (square, square))
+    return tileImage
+
 
 PLAYING_KEYS = {
     "up":[pygame.K_w, pygame.K_UP],
@@ -90,8 +158,11 @@ class Game:
         self.score = score
         self.level = level
         self.lives = 3
-        self.ghosts = [Ghost(14.0, 13.5, "red", 0), Ghost(17.0, 11.5, "blue", 1), Ghost(17.0, 13.5, "pink", 2), Ghost(17.0, 15.5, "orange", 3)]
-        self.pacman = Pacman(26.0, 13.5) # Center of Second Last Row
+        self.ghosts = []
+
+        # ghosts are spawned after the game is initialized (in the global scope, see game = Game(1, 0) below )
+        # self.ghosts = [Ghost(14.0, 13.5, "red", 0), Ghost(17.0, 11.5, "blue", 1), Ghost(17.0, 13.5, "pink", 2), Ghost(17.0, 15.5, "orange", 3)]
+        self.pacman = Pacman(pacmanStart[0], pacmanStart[1]) # Center of Second Last Row
         self.total = self.getCount()
         self.ghostScore = 200
         self.levels = [[350, 250], [150, 450], [150, 450], [0, 600]]
@@ -124,7 +195,7 @@ class Game:
     # Driver method: The games primary update method
     def update(self):
         # pygame.image.unload()
-        print(self.ghostStates)
+        # print(self.ghostStates)
         if self.gameOver:
             self.gameOverFunc()
             return
@@ -264,8 +335,7 @@ class Game:
                          imageName = "0" + imageName
                     # Get image of desired tile
                     imageName = "tile" + imageName + ".png"
-                    tileImage = pygame.image.load(BoardPath + imageName)
-                    tileImage = pygame.transform.scale(tileImage, (square, square))
+                    tileImage = getTexture(boardTextureNames[i][j])
 
                     #Display image of tile
                     screen.blit(tileImage, (j * square, i * square, square, square))
@@ -472,7 +542,7 @@ class Game:
     def displayLives(self):
         # 33 rows || 28 cols
         # Lives[[31, 5], [31, 3], [31, 1]]
-        livesLoc = [[34, 3], [34, 1]]
+        livesLoc = [[boardHeight+3, 3], [boardHeight+3, 1]]
         for i in range(self.lives - 1):
             lifeImage = pygame.image.load(ElementPath + "tile054.png")
             lifeImage = pygame.transform.scale(lifeImage, (int(square * spriteRatio), int(square * spriteRatio)))
@@ -532,8 +602,7 @@ class Game:
                          imageName = "0" + imageName
                     # Get image of desired tile
                     imageName = "tile" + imageName + ".png"
-                    tileImage = pygame.image.load(BoardPath + imageName)
-                    tileImage = pygame.transform.scale(tileImage, (square, square))
+                    tileImage = getTexture(boardTextureNames[i][j])
                     #Display image of tile
                     screen.blit(tileImage, (j * square, i * square, square, square))
 
@@ -832,7 +901,7 @@ class Ghost:
 
         # Finds a target that will keep the ghosts dispersed
         while True:
-            self.target = [randrange(31), randrange(28)]
+            self.target = [randrange(boardHeight), randrange(boardWidth)]
             quad = 0
             if self.target[0] <= 15 and self.target[1] >= 13:
                 quad = 0
@@ -881,7 +950,10 @@ class Ghost:
 game = Game(1, 0)
 ghostsafeArea = [15, 13] # The location the ghosts escape to when attacked
 ghostGate = [[15, 13], [15, 14]]
-
+game.spawn_ghost()
+game.spawn_ghost()
+game.spawn_ghost()
+game.spawn_ghost()
 
 def canMove(row, col):
     if col == -1 or col == len(gameBoard[0]):
@@ -894,21 +966,25 @@ def canMove(row, col):
 def reset():
     global game
     #game.ghosts = [Ghost(14.0, 13.5, "red", 0), Ghost(17.0, 11.5, "blue", 1), Ghost(17.0, 13.5, "pink", 2), Ghost(17.0, 15.5, "orange", 3)]
+    # game.spawn_ghost()
+    # game.spawn_ghost()
+    # game.spawn_ghost()
+    # game.spawn_ghost()
     for ghost in game.ghosts:
-        if ghost.color == "red":
-            ghost.row = 14.0
-            ghost.col = 13.5
-        elif ghost.color == "blue":
-            ghost.row = 17.0
-            ghost.col = 11.5
-        elif ghost.color == "pink":
-            ghost.row = 17.0
-            ghost.col = 13.5
-        elif ghost.color == "orange":
-            ghost.row = 17.0
-            ghost.col = 15.5
+        # if ghost.color == "red":
+        #     ghost.row = 14.0
+        #     ghost.col = 13.5
+        # elif ghost.color == "blue":
+        #     ghost.row = 17.0
+        #     ghost.col = 11.5
+        # elif ghost.color == "pink":
+        #     ghost.row = 17.0
+        #     ghost.col = 13.5
+        # elif ghost.color == "orange":
+        #     ghost.row = 17.0
+        #     ghost.col = 15.5
         ghost.setTarget()
-    game.pacman = Pacman(26.0, 13.5)
+    game.pacman = Pacman(pacmanStart[0], pacmanStart[1])
     game.lives -= 1
     game.paused = True
     game.render()
