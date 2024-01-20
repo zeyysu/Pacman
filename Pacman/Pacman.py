@@ -300,17 +300,50 @@ class Game:
             running = False
         self.softRender()
 
+    def calculate_average_ghost_position(self):
+        # Calculate the average position of existing ghosts
+        total_positions = len(self.ghosts)
+        if total_positions == 0:
+            return None
 
+        avg_x = sum(ghost.row for ghost in self.ghosts) / total_positions
+        avg_y = sum(ghost.col for ghost in self.ghosts) / total_positions
+
+        return (avg_x, avg_y)
+
+
+    def calculate_distance(self, pos1, pos2):
+        return abs(pos1[0] - pos2[0]) + abs(pos1[1] - pos2[1])
     # Spawns a ghost
     def spawn_ghost(self):
         color = ghostColors[len(self.ghosts)%4]
         spawnLocation = [0, 0]
         newGhost = Ghost(spawnLocation[0], spawnLocation[1], color, len(self.ghosts))
-        while True:
-            spawnLocation[0] = randrange(0, len(gameBoard) - 1)
-            spawnLocation[1] = randrange(0, len(gameBoard[0]) -1)
-            if (abs(spawnLocation[0]- self.pacman.row) + abs(spawnLocation[1] - self.pacman.col) > 10) and newGhost.isValid(spawnLocation[0], spawnLocation[1]):
-                break
+        avg_position = self.calculate_average_ghost_position()
+        
+        
+        if avg_position is not None:
+            spawn_position_candidates = [(self.calculate_distance(avg_position, (x, y)), (x, y))
+                for x in range(len(gameBoard) -1)
+                for y in range(len(gameBoard[0]) -1)
+                if(self.calculate_distance((self.pacman.row, self.pacman.col), (x, y)) > 10 and newGhost.isValid(x, y))
+            ]
+
+            # Sort the distances in descending order
+            spawn_position_candidates.sort(key=lambda item: item[0], reverse=True)
+            for _, candidate in spawn_position_candidates:
+                if all(self.calculate_distance(candidate, (ghost.row, ghost.col)) > 5 for ghost in self.ghosts):
+                    spawnLocation = candidate
+                    break
+
+            # Spawn the ghost at the furthest possible distance from the average ghost positio  
+        else:
+            while True:
+                spawnLocation[0] = randrange(0, len(gameBoard) - 1)
+                spawnLocation[1] = randrange(0, len(gameBoard[0]) -1)
+                if (abs(spawnLocation[0]- self.pacman.row) + abs(spawnLocation[1] - self.pacman.col) > 10) and newGhost.isValid(spawnLocation[0], spawnLocation[1]):
+                    break
+
         newGhost.row = spawnLocation[0]
         newGhost.col = spawnLocation[1]
         self.ghosts.append(newGhost)
@@ -422,7 +455,7 @@ class Game:
     def checkSurroundings(self):
         # Check if pacman got killed
         for ghost in self.ghosts:
-            if self.touchingPacman(ghost.row, ghost.col) and not ghost.attacked:
+            if self.touchingPacman(ghost.row, ghost.col) and not ghost.attacked and not ghost.isDead():
                 if self.lives == 1:
                     print("You lose")
                     self.forcePlayMusic("death_1.wav")
@@ -743,7 +776,7 @@ class Ghost:
         self.lastLoc = [-1, -1]
         self.attackedTimer = 240
         self.attackedCount = 0
-        self.deathTimer = 120
+        self.deathTimer = 150
         self.deathCount = 0
 
     def update(self):
