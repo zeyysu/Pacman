@@ -331,10 +331,12 @@ class Game:
 
             # Sort the distances in descending order
             spawn_position_candidates.sort(key=lambda item: item[0], reverse=True)
+            first = spawn_position_candidates[0][1]
             for _, candidate in spawn_position_candidates:
                 if all(self.calculate_distance(candidate, (ghost.row, ghost.col)) > 5 for ghost in self.ghosts):
-                    spawnLocation = candidate
+                    first = candidate
                     break
+            spawnLocation = first
 
             # Spawn the ghost at the furthest possible distance from the average ghost positio  
         else:
