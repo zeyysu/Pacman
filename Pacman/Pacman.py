@@ -769,7 +769,8 @@ class Ghost:
             self.attacked = False
             self.setTarget()
 
-        if self.dead and gameBoard[self.row][self.col] == 4:
+        #if self.dead and gameBoard[self.row][self.col] == 4:
+        if self.dead:
             self.deathCount += 1
             self.attacked = False
             if self.deathCount == self.deathTimer:
@@ -970,21 +971,13 @@ def reset():
     # game.spawn_ghost()
     # game.spawn_ghost()
     # game.spawn_ghost()
-    for ghost in game.ghosts:
-        # if ghost.color == "red":
-        #     ghost.row = 14.0
-        #     ghost.col = 13.5
-        # elif ghost.color == "blue":
-        #     ghost.row = 17.0
-        #     ghost.col = 11.5
-        # elif ghost.color == "pink":
-        #     ghost.row = 17.0
-        #     ghost.col = 13.5
-        # elif ghost.color == "orange":
-        #     ghost.row = 17.0
-        #     ghost.col = 15.5
-        ghost.setTarget()
     game.pacman = Pacman(pacmanStart[0], pacmanStart[1])
+    length = len(game.ghosts)
+    game.ghosts = []
+    for i in range(length):
+        game.spawn_ghost()
+    for ghost in game.ghosts:
+        ghost.setTarget()
     game.lives -= 1
     game.paused = True
     game.render()
