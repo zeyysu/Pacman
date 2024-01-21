@@ -54,6 +54,8 @@ for i in range(len(originalGameBoard)):
         if val == 2:
             emptySpaces.append((i, j))
 
+berryPos = random.choice(emptySpaces)
+
 def addRandomSpecialTicTaks():
     global originalGameBoard
 
@@ -103,12 +105,7 @@ addRandomSpecialTicTaks()
 #     [3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3],
 #     [3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3],
 # ]
-# for i in range(len(originalGameBoard)):
-#     originalGameBoard[i].append(3)
-#     originalGameBoard[i].append(3)
 
-# originalGameBoard[17][-1] = 1
-# originalGameBoard[17][-2] = 1
 
 gameBoard = copy.deepcopy(originalGameBoard)
 ghostColors = ["red", "blue", "pink", "orange"]
@@ -182,7 +179,7 @@ class Game:
         self.pointsTimer = 10
         # Berry Spawn Time, Berry Death Time, Berry Eaten
         self.berryState = [200, 400, False]
-        self.berryLocation = [20.0, 13.5]
+        self.berryLocation = [berryPos[0], berryPos[1]]
         self.berries = ["tile080.png", "tile081.png", "tile082.png", "tile083.png", "tile084.png", "tile085.png", "tile086.png", "tile087.png"]
         self.berriesCollected = []
         self.levelTimer = 0
@@ -357,21 +354,11 @@ class Game:
     def render(self):
         screen.fill((0, 0, 0)) # Flushes the screen
         # Draws game elements
-        currentTile = 0
-        self.displayLives()
-        self.displayScore()
+
         for i in range(3, len(gameBoard) - 2):
             for j in range(len(gameBoard[0])):
                 if gameBoard[i][j] == 3: # Draw wall
-                    imageName = str(currentTile)
-                    if len(imageName) == 1:
-                        imageName = "00" + imageName
-                    elif len(imageName) == 2:
-                         imageName = "0" + imageName
-                    # Get image of desired tile
-                    imageName = "tile" + imageName + ".png"
                     tileImage = getTexture(boardTextureNames[i][j])
-
                     #Display image of tile
                     screen.blit(tileImage, (j * square, i * square, square, square))
 
@@ -383,11 +370,13 @@ class Game:
                 elif gameBoard[i][j] == 6: #White Special Tic-Tak
                     pygame.draw.circle(screen, pelletColor,(j * square + square//2, i * square + square//2), square//2)
 
-                currentTile += 1
         # Draw Sprites
         for ghost in self.ghosts:
             ghost.draw()
         self.pacman.draw()
+
+        self.displayLives()
+        self.displayScore()
         # Updates the screen
         pygame.display.update()
 
@@ -575,16 +564,14 @@ class Game:
         self.gameOverCounter += 1
 
     def displayLives(self):
-        # 33 rows || 28 cols
-        # Lives[[31, 5], [31, 3], [31, 1]]
-        livesLoc = [[boardHeight+3, 3], [boardHeight+3, 1]]
         for i in range(self.lives - 1):
             lifeImage = pygame.image.load(ElementPath + "tile054.png")
             lifeImage = pygame.transform.scale(lifeImage, (int(square * spriteRatio), int(square * spriteRatio)))
-            screen.blit(lifeImage, (livesLoc[i][1] * square, livesLoc[i][0] * square - spriteOffset, square, square))
+            location = [boardHeight-2, 2*i+1]
+            screen.blit(lifeImage, (location[1] * square, location[0] * square - spriteOffset, square, square))
 
     def displayBerries(self):
-        firstBerrie = [34, 26]
+        firstBerrie = [boardHeight -2, boardWidth - 2]
         for i in range(len(self.berriesCollected)):
             berrieImage = pygame.image.load(ElementPath + self.berriesCollected[i])
             berrieImage = pygame.transform.scale(berrieImage, (int(square * spriteRatio), int(square * spriteRatio)))
@@ -992,7 +979,10 @@ game.spawn_ghost()
 game.spawn_ghost()
 
 def canMove(row, col):
+    
     if col == -1 or col == len(gameBoard[0]):
+        return True
+    if gameBoard[int(row)][int(col)] == 7:
         return True
     if gameBoard[int(row)][int(col)] != 3:
         return True
