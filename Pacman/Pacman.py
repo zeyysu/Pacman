@@ -173,7 +173,6 @@ class StragetyAI:
         for _ in range(100):  # Limit the number of attempts to avoid infinite loops
             x = random.choice(valid_ranges[quadrant][0])
             y = random.choice(valid_ranges[quadrant][1])
-            print(f"Trying to spawn ghost at {x}, {y}")
 
             # Check if the chosen location is at least 10 units away from Pac-Man and is valid
             if newGhost.isValid(x, y) and self.calculate_distance((x, y), (pacman.row, pacman.col)) >= maze_offset:
@@ -198,7 +197,7 @@ class Game:
         self.ghostUpdateCount = 0
         self.pacmanUpdateDelay = 1
         self.pacmanUpdateCount = 0
-        self.tictakChangeDelay = 10
+        self.tictakChangeDelay = 60
         self.tictakChangeCount = 0
         #spawn ghost every minute
         self.ghostSpawnDelay = 10
