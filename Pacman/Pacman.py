@@ -47,12 +47,26 @@ for i in range(10):
 pacmanStart = (pacmanStart[0], pacmanStart[1])
 
 emptySpaces = []
+crossways = []
+pacmanCrosswayRadius = 3
+
+def getCrossways(pacmanRow, pacmanCol):
+    eligible = []
+    for i in crossways:
+        if abs(i[0] - pacmanRow) + abs(i[1] - pacmanCol) <= pacmanCrosswayRadius:
+            eligible.append(i)
+    return eligible
 
 for i in range(len(originalGameBoard)):
     for j in range(len(originalGameBoard[i])):
         val = originalGameBoard[i][j]
         if val == 2:
             emptySpaces.append((i, j))
+
+            adjacents = [(i, j + 1), (i, j - 1), (i + 1, j), (i - 1, j)]
+            vals = [originalGameBoard[y][x] for y, x in adjacents]
+            if vals.count(2) == 3 or vals.count(2) == 4:
+                crossways.append((i, j))
 
 berryPos = random.choice(emptySpaces)
 
@@ -290,7 +304,7 @@ class Game:
         index = 0
         for ghost in self.ghosts:
             if not ghost.attacked and not ghost.dead and self.ghostStates[index][0] == 0:
-                ghost.target = [self.pacman.row, self.pacman.col]
+                ghost.pickCrossway(self.pacman.row, self.pacman.col)
             index += 1
 
         if self.levelTimer == self.lockedInTimer:
@@ -787,6 +801,11 @@ class Pacman:
         pacmanImage = pygame.transform.scale(pacmanImage, (int(square * spriteRatio), int(square * spriteRatio)))
         screen.blit(pacmanImage, (self.col * square + spriteOffset, self.row * square + spriteOffset, square, square))
 
+        # eligiblePoints = getCrossways(self.row, self.col)
+        # print("el points:", eligiblePoints)
+        # for point in eligiblePoints:
+        #     pygame.draw.circle(screen, (255, 0, 0),(point[1] * square + square//2, point[0] * square + square//2), square//2)
+
 class Ghost:
     def __init__(self, row, col, color, changeFeetCount):
         self.row = row
@@ -804,6 +823,47 @@ class Ghost:
         self.attackedCount = 0
         self.deathTimer = 150
         self.deathCount = 0
+
+        self.followedPoint = (-1, -1)
+
+    def followPoint(self, point):
+        if self.followedPoint == point:
+            return
+        
+        if point != (-1, -1):
+            print(f"Ghost {self.color} is now following {point}")
+        else:
+            print(f"Ghost {self.color} is now moving randomly")
+
+        self.followedPoint = point
+        self.target = [point[0], point[1]]
+
+    def getVisibleCrossways(self, pacmanRow, pacmanCol):
+        visibleCrossways = []
+        allCrossways = getCrossways(pacmanRow, pacmanCol)
+        for crossway in allCrossways:
+            if abs(crossway[0] - self.row) + abs(crossway[1] - self.col) <= 10:
+                visibleCrossways.append(crossway)
+        return visibleCrossways
+
+    def pickCrossway(self, pacmanRow, pacmanCol):
+
+        if abs(self.row - pacmanRow) + abs(self.col - pacmanCol) <= pacmanCrosswayRadius:
+            self.followPoint((pacmanRow, pacmanCol))
+            return
+
+        visibleCrossways = self.getVisibleCrossways(pacmanRow, pacmanCol)
+        if len(visibleCrossways) == 0:
+            self.followPoint((-1, -1))
+            return
+
+        closest = visibleCrossways[0]
+        for crossway in visibleCrossways:
+            if abs(crossway[0] - self.row) + abs(crossway[1] - self.col) < abs(closest[0] - self.row) + abs(closest[1] - self.col):
+                closest = crossway
+
+
+        self.followPoint(closest)
 
     def update(self):
         # print(self.row, self.col)
