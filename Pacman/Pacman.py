@@ -138,6 +138,78 @@ PLAYING_KEYS = {
     "left":[pygame.K_a, pygame.K_LEFT]
 }
 
+class StragetyAI:
+    def calculate_quadrant(self, ghost, pacman):
+        if ghost.row <= pacman.row and ghost.col <= pacman.col:
+            return "top-left"
+        elif ghost.row >= pacman.row and ghost.col <= pacman.col:
+            return "top-right"
+        elif ghost.row <= pacman.row and ghost.col >= pacman.col:
+            return "bottom-left"
+        elif ghost.row >= pacman.row and ghost.col >= pacman.col:
+            return "bottom-right"
+        else:
+            return "unknown"
+        
+    def spawn_new_ghost(self, pacman, ghosts):
+        # Example: Spawning new ghost in the quadrant opposite to where most ghosts are
+        quadrant_count = {"top-left": 0, "top-right": 0, "bottom-left": 0, "bottom-right": 0}
+
+        for ghost in ghosts:
+            quadrant = self.calculate_quadrant(ghost, pacman)
+            quadrant_count[quadrant] += 1
+
+        #print(f"Quadrant count: {quadrant_count}")
+        # Choose the quadrant with the least ghosts
+        min_quadrant = min(quadrant_count, key=quadrant_count.get)
+
+        # Spawn the new ghost in the chosen quadrant
+        newGhost = self.spawn_location_based_on_quadrant(min_quadrant, pacman, ghosts)
+
+        # Check if the spawn point is valid and adjust if necessary
+        return newGhost
+    
+    def calculate_distance(self, pos1, pos2):
+        return abs(pos1[0] - pos2[0]) + abs(pos1[1] - pos2[1])
+
+    def spawn_location_based_on_quadrant(self, quadrant, pacman, ghosts):
+        maze_offset = 10  # Minimum distance from Pac-Man
+        print(f"Spawning ghost in {quadrant} quadrant")
+
+        # Define the valid ranges for each quadrant
+        valid_ranges = {
+            "top-left": (range(0, int(pacman.row)), range(0, int(pacman.col))),
+            "top-right": (range(int(pacman.row), len(gameBoard) -1), range(0, int(pacman.col))),
+            "bottom-left": (range(0, int(pacman.row)), range(int(pacman.col),len(gameBoard[0]) -1)),
+            "bottom-right": (range(int(pacman.row), len(gameBoard) -1), range(int(pacman.col), len(gameBoard[0]) -1)),
+        }
+
+        color = ghostColors[len(ghosts)%4]
+        spawnLocation = [0, 0]
+        newGhost = Ghost(spawnLocation[0], spawnLocation[1], color, len(ghosts))
+
+
+        # Try to find a valid location in the specified quadrant
+        for _ in range(100):  # Limit the number of attempts to avoid infinite loops
+            x = random.choice(valid_ranges[quadrant][0])
+            y = random.choice(valid_ranges[quadrant][1])
+
+            # Check if the chosen location is at least 10 units away from Pac-Man and is valid
+            if newGhost.isValid(x, y) and self.calculate_distance((x, y), (pacman.row, pacman.col)) >= maze_offset:
+                if all(self.calculate_distance((x,y), (ghost.row, ghost.col)) >= 5 for ghost in ghosts):
+                    newGhost.row = x
+                    newGhost.col = y
+                    return newGhost
+            
+        while True:
+                spawnLocation[0] = randrange(0, len(gameBoard) - 1)
+                spawnLocation[1] = randrange(0, len(gameBoard[0]) -1)
+                if (abs(spawnLocation[0]- pacman.row) + abs(spawnLocation[1] -pacman.col) > 10) and newGhost.isValid(spawnLocation[0], spawnLocation[1]):
+                    newGhost.row = spawnLocation[0]
+                    newGhost.col = spawnLocation[1]
+                    return newGhost
+
+
 class Game:
     def __init__(self, level, score):
         self.paused = True
@@ -156,6 +228,7 @@ class Game:
         self.level = level
         self.lives = 3
         self.ghosts = []
+        self.strategyAI = StragetyAI()
 
         # ghosts are spawned after the game is initialized (in the global scope, see game = Game(1, 0) below )
         # self.ghosts = [Ghost(14.0, 13.5, "red", 0), Ghost(17.0, 11.5, "blue", 1), Ghost(17.0, 13.5, "pink", 2), Ghost(17.0, 15.5, "orange", 3)]
@@ -315,42 +388,11 @@ class Game:
         return abs(pos1[0] - pos2[0]) + abs(pos1[1] - pos2[1])
     # Spawns a ghost
     def spawn_ghost(self):
-        color = ghostColors[len(self.ghosts)%4]
-        spawnLocation = [0, 0]
-        newGhost = Ghost(spawnLocation[0], spawnLocation[1], color, len(self.ghosts))
-        avg_position = self.calculate_average_ghost_position()
-        
-        
-        if avg_position is not None:
-            spawn_position_candidates = [(self.calculate_distance(avg_position, (x, y)) - self.calculate_distance((self.pacman.row, self.pacman.col), (x, y)), (x, y))
-                for x in range(len(gameBoard) -1)
-                for y in range(len(gameBoard[0]) -1)
-                if(self.calculate_distance((self.pacman.row, self.pacman.col), (x, y)) > 10 and newGhost.isValid(x, y))
-            ]
-
-            # Sort the distances in descending order
-            spawn_position_candidates.sort(key=lambda item: item[0], reverse=True)
-            first = spawn_position_candidates[0][1]
-            for _, candidate in spawn_position_candidates:
-                if all(self.calculate_distance(candidate, (ghost.row, ghost.col)) >= 9 for ghost in self.ghosts):
-                    first = candidate
-                    break
-            spawnLocation = first
-
-            # Spawn the ghost at the furthest possible distance from the average ghost positio  
-        else:
-            while True:
-                spawnLocation[0] = randrange(0, len(gameBoard) - 1)
-                spawnLocation[1] = randrange(0, len(gameBoard[0]) -1)
-                if (abs(spawnLocation[0]- self.pacman.row) + abs(spawnLocation[1] - self.pacman.col) > 10) and newGhost.isValid(spawnLocation[0], spawnLocation[1]):
-                    break
-
-        newGhost.row = spawnLocation[0]
-        newGhost.col = spawnLocation[1]
+        newGhost = self.strategyAI.spawn_new_ghost(self.pacman, self.ghosts)
         self.ghosts.append(newGhost)
         self.ghostStates.append([0, 0])
         self.levels.append([350, 250])
-        print(f"Spawned {newGhost.color}-colored ghost at {spawnLocation[0]}, {spawnLocation[1]}")
+        print(f"Spawned {newGhost.color}-colored ghost at {newGhost.row}, {newGhost.col}")
             
     # Render method
     def render(self):
