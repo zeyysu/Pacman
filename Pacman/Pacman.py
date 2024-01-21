@@ -151,7 +151,7 @@ class Game:
         self.tictakChangeDelay = 10
         self.tictakChangeCount = 0
         #spawn ghost every minute
-        self.ghostSpawnDelay = 60
+        self.ghostSpawnDelay = 10
         self.ghostLastSpawn = time.time()
         self.ghostsAttacked = False
         self.highScore = self.getHighScore()
@@ -323,7 +323,7 @@ class Game:
         
         
         if avg_position is not None:
-            spawn_position_candidates = [(self.calculate_distance(avg_position, (x, y)), (x, y))
+            spawn_position_candidates = [(self.calculate_distance(avg_position, (x, y)) - self.calculate_distance((self.pacman.row, self.pacman.col), (x, y)), (x, y))
                 for x in range(len(gameBoard) -1)
                 for y in range(len(gameBoard[0]) -1)
                 if(self.calculate_distance((self.pacman.row, self.pacman.col), (x, y)) > 10 and newGhost.isValid(x, y))
@@ -333,7 +333,7 @@ class Game:
             spawn_position_candidates.sort(key=lambda item: item[0], reverse=True)
             first = spawn_position_candidates[0][1]
             for _, candidate in spawn_position_candidates:
-                if all(self.calculate_distance(candidate, (ghost.row, ghost.col)) > 5 for ghost in self.ghosts):
+                if all(self.calculate_distance(candidate, (ghost.row, ghost.col)) >= 9 for ghost in self.ghosts):
                     first = candidate
                     break
             spawnLocation = first
