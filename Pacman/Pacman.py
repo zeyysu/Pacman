@@ -48,7 +48,7 @@ pacmanStart = (pacmanStart[0], pacmanStart[1])
 
 emptySpaces = []
 crossways = []
-pacmanCrosswayRadius = 3
+pacmanCrosswayRadius = 5
 
 def getCrossways(pacmanRow, pacmanCol):
     eligible = []
@@ -788,7 +788,6 @@ class Pacman:
         screen.blit(pacmanImage, (self.col * square + spriteOffset, self.row * square + spriteOffset, square, square))
 
         # eligiblePoints = getCrossways(self.row, self.col)
-        # print("el points:", eligiblePoints)
         # for point in eligiblePoints:
         #     pygame.draw.circle(screen, (255, 0, 0),(point[1] * square + square//2, point[0] * square + square//2), square//2)
 
@@ -811,13 +810,21 @@ class Ghost:
         self.deathCount = 0
 
         self.followedPoint = (-1, -1)
+        self.followingPacman = False
 
-    def followPoint(self, point):
+    def followPoint(self, point, followingPacman=False):
+
+        if(followingPacman and not self.followingPacman):
+            print(f"Ghost {self.color} is now following pacman")
+
+        self.followingPacman = followingPacman
+        
         if self.followedPoint == point:
             return
         
         if point != (-1, -1):
-            print(f"Ghost {self.color} is now following {point}")
+            if not followingPacman:
+                print(f"Ghost {self.color} is now following {point}")
         else:
             print(f"Ghost {self.color} is now moving randomly")
 
@@ -835,7 +842,7 @@ class Ghost:
     def pickCrossway(self, pacmanRow, pacmanCol):
 
         if abs(self.row - pacmanRow) + abs(self.col - pacmanCol) <= pacmanCrosswayRadius:
-            self.followPoint((pacmanRow, pacmanCol))
+            self.followPoint((pacmanRow, pacmanCol), True)
             return
 
         visibleCrossways = self.getVisibleCrossways(pacmanRow, pacmanCol)
