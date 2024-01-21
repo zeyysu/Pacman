@@ -29,4 +29,4 @@ The 80s classic Pacman in all its beauty <br/> <br/>
     5. In terminal type python3 Pacman.py and hit enter
 <br/>
 
-<img src ="Pacman/Media/newgameplay.gif" alt="Pacman Gameplay" width="600"/>
+<img src ="Pacman/Media/newgameplay2.gif" alt="Pacman Gameplay" width="600"/>
