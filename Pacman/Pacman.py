@@ -163,6 +163,7 @@ class Game:
         # ghosts are spawned after the game is initialized (in the global scope, see game = Game(1, 0) below )
         # self.ghosts = [Ghost(14.0, 13.5, "red", 0), Ghost(17.0, 11.5, "blue", 1), Ghost(17.0, 13.5, "pink", 2), Ghost(17.0, 15.5, "orange", 3)]
         self.pacman = Pacman(pacmanStart[0], pacmanStart[1]) # Center of Second Last Row
+        print(f"Pacman spawned at {self.pacman.row}, {self.pacman.col}")
         self.total = self.getCount()
         self.ghostScore = 200
         self.levels = [[350, 250], [150, 450], [150, 450], [0, 600]]
@@ -274,6 +275,7 @@ class Game:
                     pygame.draw.rect(screen, (0, 0, 0), (self.pacman.col * square, self.pacman.row * square, square, square))
                 elif gameBoard[int(self.pacman.row)][int(self.pacman.col)] == 5 or gameBoard[int(self.pacman.row)][int(self.pacman.col)] == 6:
                     self.forcePlayMusic("power_pellet.wav")
+                    print(f"Pacman ate special Tic-Tak at {self.pacman.row}, {self.pacman.col}")
                     gameBoard[int(self.pacman.row)][int(self.pacman.col)] = 1
                     self.collected += 1
                     # Fill tile with black
@@ -458,8 +460,9 @@ class Game:
         # Check if pacman got killed
         for ghost in self.ghosts:
             if self.touchingPacman(ghost.row, ghost.col) and not ghost.attacked and not ghost.isDead():
+                print(f"Pacman got killed by {ghost.color} ghost")
                 if self.lives == 1:
-                    print("You lose")
+                    print("Pacman lose")
                     self.forcePlayMusic("death_1.wav")
                     self.gameOver = True
                     #Removes the ghosts from the screen
@@ -474,6 +477,7 @@ class Game:
                 self.forcePlayMusic("pacman_death.wav")
                 reset()
             elif self.touchingPacman(ghost.row, ghost.col) and ghost.isAttacked() and not ghost.isDead():
+                print(f"Pacman killed {ghost.color} ghost")
                 ghost.setDead(True)
                 ghost.setTarget()
                 ghost.ghostSpeed = 1
@@ -485,6 +489,7 @@ class Game:
                 self.forcePlayMusic("eat_ghost.wav")
                 pause(10000000)
         if self.touchingPacman(self.berryLocation[0], self.berryLocation[1]) and not self.berryState[2] and self.levelTimer in range(self.berryState[0], self.berryState[1]):
+            print("Pacman ate berry")
             self.berryState[2] = True
             self.score += self.berryScore
             self.points.append([self.berryLocation[0], self.berryLocation[1], self.berryScore, 0])
@@ -604,8 +609,10 @@ class Game:
         return False
 
     def newLevel(self):
-        reset()
+        reset(True)
         self.lives = 3
+        print("New Level")
+        print(f"Pacman lives: {self.lives}")
         self.collected = 0
         self.started = False
         self.berryState = [200, 400, False]
@@ -695,22 +702,30 @@ class Pacman:
         if self.newDir == 0:
             if canMove(math.floor(self.row - self.pacSpeed), self.col) and self.col % 1.0 == 0:
                 self.row -= self.pacSpeed
-                self.dir = self.newDir
+                if(self.dir != self.newDir):
+                    self.dir = self.newDir
+                    print(f"Pacman changed direction to up")
                 return
         elif self.newDir == 1:
             if canMove(self.row, math.ceil(self.col + self.pacSpeed)) and self.row % 1.0 == 0:
                 self.col += self.pacSpeed
-                self.dir = self.newDir
+                if(self.dir != self.newDir):
+                    self.dir = self.newDir
+                    print(f"Pacman changed direction to right")
                 return
         elif self.newDir == 2:
             if canMove(math.ceil(self.row + self.pacSpeed), self.col) and self.col % 1.0 == 0:
                 self.row += self.pacSpeed
-                self.dir = self.newDir
+                if(self.dir != self.newDir):
+                    self.dir = self.newDir
+                    print(f"Pacman changed direction to down")
                 return
         elif self.newDir == 3:
             if canMove(self.row, math.floor(self.col - self.pacSpeed)) and self.row % 1.0 == 0:
                 self.col -= self.pacSpeed
-                self.dir = self.newDir
+                if(self.dir != self.newDir):       
+                    self.dir = self.newDir         
+                    print(f"Pacman changed direction to left")  
                 return
 
         if self.dir == 0:
@@ -811,6 +826,7 @@ class Ghost:
             if self.deathCount == self.deathTimer:
                 self.deathCount = 0
                 self.dead = False
+                print(f"Ghost {self.color} respawned")
                 self.ghostSpeed = 1/4
 
     def draw(self): # Ghosts states: Alive, Attacked, Dead Attributes: Color, Direction, Location
@@ -999,7 +1015,8 @@ def canMove(row, col):
     return False
 
 # Reset after death
-def reset():
+def reset(newLevel = False):
+    print("Resetting level")
     global game
     #game.ghosts = [Ghost(14.0, 13.5, "red", 0), Ghost(17.0, 11.5, "blue", 1), Ghost(17.0, 13.5, "pink", 2), Ghost(17.0, 15.5, "orange", 3)]
     # game.spawn_ghost()
@@ -1007,13 +1024,19 @@ def reset():
     # game.spawn_ghost()
     # game.spawn_ghost()
     game.pacman = Pacman(pacmanStart[0], pacmanStart[1])
+    game.lives -= 1
+    print(f"Pacman spawned at {game.pacman.row}, {game.pacman.col}")
     length = len(game.ghosts)
+    if(newLevel):
+        length = 4
+        game.ghostLastSpawn = time.time()
+    else:
+        print(f"Pacman lives: {game.lives}")
     game.ghosts = []
     for i in range(length):
         game.spawn_ghost()
     for ghost in game.ghosts:
         ghost.setTarget()
-    game.lives -= 1
     game.paused = True
     game.render()
 
