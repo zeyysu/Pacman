@@ -10,6 +10,7 @@ Tactical-AI: Ghosts are equipped with Tactical AI, enabling dynamic decisions ba
 
 Analytics: This module systematically logs detailed information about the movements and interactions of each entity within the game. 
 
+by @zeyysu and @ilkerkosaroglu
 # Pacman
 The 80s classic Pacman in all its beauty <br/> <br/>
 <!-- <img src="Pacman/Media/menu.png" alt="Pacman Menu Screen" width="400"/> -->
