@@ -59,8 +59,21 @@ berryPos = random.choice(emptySpaces)
 def addRandomSpecialTicTaks():
     global originalGameBoard
 
-    # pick 10 random empty spaces to be special tic-taks
-    special = random.choices(emptySpaces, k=10)
+    def check(special):
+        closeness = 8
+        # check if any pair is too close
+        for i in range(len(special)):
+            for j in range(i + 1, len(special)):
+                if abs(special[i][0] - special[j][0]) + abs(special[i][1] - special[j][1]) < closeness:
+                    return True
+        print("Found good special tic-tak placement")
+        return False
+
+    for i in range(1000):
+        # pick 10 random empty spaces to be special tic-taks
+        special = random.choices(emptySpaces, k=10)
+        if not check(special):
+            break
 
     for i,j in special:
         originalGameBoard[i][j] = 6
