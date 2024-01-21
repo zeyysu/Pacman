@@ -123,9 +123,9 @@ class StragetyAI:
         if ghost.row <= pacman.row and ghost.col <= pacman.col:
             return "top-left"
         elif ghost.row >= pacman.row and ghost.col <= pacman.col:
-            return "top-right"
-        elif ghost.row <= pacman.row and ghost.col >= pacman.col:
             return "bottom-left"
+        elif ghost.row <= pacman.row and ghost.col >= pacman.col:
+            return "top-right"
         elif ghost.row >= pacman.row and ghost.col >= pacman.col:
             return "bottom-right"
         else:
@@ -159,8 +159,8 @@ class StragetyAI:
         # Define the valid ranges for each quadrant
         valid_ranges = {
             "top-left": (range(0, int(pacman.row)), range(0, int(pacman.col))),
-            "top-right": (range(int(pacman.row), len(gameBoard) -1), range(0, int(pacman.col))),
-            "bottom-left": (range(0, int(pacman.row)), range(int(pacman.col),len(gameBoard[0]) -1)),
+            "bottom-left": (range(int(pacman.row), len(gameBoard) -1), range(0, int(pacman.col))),
+            "top-right": (range(0, int(pacman.row)), range(int(pacman.col),len(gameBoard[0]) -1)),
             "bottom-right": (range(int(pacman.row), len(gameBoard) -1), range(int(pacman.col), len(gameBoard[0]) -1)),
         }
 
@@ -173,10 +173,11 @@ class StragetyAI:
         for _ in range(100):  # Limit the number of attempts to avoid infinite loops
             x = random.choice(valid_ranges[quadrant][0])
             y = random.choice(valid_ranges[quadrant][1])
+            print(f"Trying to spawn ghost at {x}, {y}")
 
             # Check if the chosen location is at least 10 units away from Pac-Man and is valid
             if newGhost.isValid(x, y) and self.calculate_distance((x, y), (pacman.row, pacman.col)) >= maze_offset:
-                if all(self.calculate_distance((x,y), (ghost.row, ghost.col)) >= 5 for ghost in ghosts):
+                if all(self.calculate_distance((x,y), (ghost.row, ghost.col)) >= 3 for ghost in ghosts):
                     newGhost.row = x
                     newGhost.col = y
                     return newGhost
@@ -200,7 +201,7 @@ class Game:
         self.tictakChangeDelay = 10
         self.tictakChangeCount = 0
         #spawn ghost every minute
-        self.ghostSpawnDelay = 60
+        self.ghostSpawnDelay = 10
         self.ghostLastSpawn = time.time()
         self.ghostsAttacked = False
         self.highScore = self.getHighScore()
