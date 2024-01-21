@@ -189,8 +189,8 @@ class StragetyAI:
             y = random.choice(valid_ranges[quadrant][1])
 
             # Check if the chosen location is at least 10 units away from Pac-Man and is valid
-            if newGhost.isValid(x, y) and self.calculate_distance((x, y), (pacman.row, pacman.col)) >= maze_offset:
-                if all(self.calculate_distance((x,y), (ghost.row, ghost.col)) >= 3 for ghost in ghosts):
+            if newGhost.isValid(x, y) and self.calculate_distance((x, y), (pacman.row, pacman.col)) > maze_offset:
+                if all(self.calculate_distance((x,y), (ghost.row, ghost.col)) >= 4 for ghost in ghosts):
                     newGhost.row = x
                     newGhost.col = y
                     return newGhost
@@ -198,7 +198,7 @@ class StragetyAI:
         while True:
                 spawnLocation[0] = randrange(0, len(gameBoard) - 1)
                 spawnLocation[1] = randrange(0, len(gameBoard[0]) -1)
-                if (abs(spawnLocation[0]- pacman.row) + abs(spawnLocation[1] -pacman.col) > 10) and newGhost.isValid(spawnLocation[0], spawnLocation[1]):
+                if (self.calculate_distance((spawnLocation[0], spawnLocation[1]), (pacman.row, pacman.col) > maze_offset)) and newGhost.isValid(spawnLocation[0], spawnLocation[1]):
                     newGhost.row = spawnLocation[0]
                     newGhost.col = spawnLocation[1]
                     return newGhost
@@ -214,7 +214,7 @@ class Game:
         self.tictakChangeDelay = 60
         self.tictakChangeCount = 0
         #spawn ghost every minute
-        self.ghostSpawnDelay = 10
+        self.ghostSpawnDelay = 60
         self.ghostLastSpawn = time.time()
         self.ghostsAttacked = False
         self.highScore = self.getHighScore()
@@ -366,20 +366,6 @@ class Game:
             running = False
         self.softRender()
 
-    def calculate_average_ghost_position(self):
-        # Calculate the average position of existing ghosts
-        total_positions = len(self.ghosts)
-        if total_positions == 0:
-            return None
-
-        avg_x = sum(ghost.row for ghost in self.ghosts) / total_positions
-        avg_y = sum(ghost.col for ghost in self.ghosts) / total_positions
-
-        return (avg_x, avg_y)
-
-
-    def calculate_distance(self, pos1, pos2):
-        return abs(pos1[0] - pos2[0]) + abs(pos1[1] - pos2[1])
     # Spawns a ghost
     def spawn_ghost(self):
         newGhost = self.strategyAI.spawn_new_ghost(self.pacman, self.ghosts)
