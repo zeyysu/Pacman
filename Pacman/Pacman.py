@@ -151,7 +151,7 @@ class Game:
         self.tictakChangeDelay = 10
         self.tictakChangeCount = 0
         #spawn ghost every minute
-        self.ghostSpawnDelay = 10
+        self.ghostSpawnDelay = 60
         self.ghostLastSpawn = time.time()
         self.ghostsAttacked = False
         self.highScore = self.getHighScore()
